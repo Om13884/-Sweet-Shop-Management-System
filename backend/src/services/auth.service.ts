@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, Role } from '@prisma/client';
 import prisma from '../utils/prisma';
+import type { StringValue } from 'ms';
 
 export interface RegisterData {
   email: string;
@@ -87,9 +88,13 @@ export class AuthService {
 
   private generateToken(userId: string, role: Role): string {
     const secret = process.env.JWT_SECRET || 'default-secret';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-
-    return jwt.sign({ userId, role }, secret, { expiresIn });
+    const expiresIn = process.env.JWT_EXPIRES_IN;
+    const payload = { userId, role };
+    if (expiresIn) {
+      const value: number | StringValue = isNaN(Number(expiresIn)) ? (expiresIn as StringValue) : Number(expiresIn);
+      return jwt.sign(payload, secret, { expiresIn: value });
+    }
+    return jwt.sign(payload, secret);
   }
 }
 
